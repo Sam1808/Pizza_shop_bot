@@ -1,5 +1,8 @@
 import logging
 import os
+import requests
+
+from geopy import distance
 
 from moltin_api import add_product_to_cart
 from moltin_api import get_cart_status
@@ -13,6 +16,24 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram.ext import Filters, Updater
 
 from textwrap import dedent
+
+
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lat, lon
 
 
 def _error(_, context):
@@ -195,9 +216,9 @@ def handle_cart(update, context):
     chat_id = update.effective_message.chat_id
     query = update.callback_query
 
-    # if '/pay' == query.data:
-    #     return handle_email(update, context)
-    if '/back' == query.data:
+    if '/pay' == query.data:
+        return handle_waiting(update, context)
+    elif '/back' == query.data:
         return start(update, context)
     elif 'delete>' in query.data:
         product_id = str(query.data).split('>')[1]
@@ -266,6 +287,77 @@ def handle_cart(update, context):
     return 'HANDLE_CART'
 
 
+def handle_waiting(update, context):
+    """Здесь описание"""
+
+    if update.message:
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    'Верно',
+                    callback_data=f'/create_customer>{update.message.text}'
+                ),
+                InlineKeyboardButton('Я ошибся', callback_data='/wrong_email')
+            ],
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        current_position = None
+
+        if update.message.location:
+            position = (
+                update.message.location.latitude,
+                update.message.location.longitude,
+            )
+            current_position = position
+
+        if not current_position:
+            current_position = fetch_coordinates(
+                apikey=context.bot_data['yandex_key'],
+                address=update.message.text
+            )
+
+        message = f'Вы прислали локацию: {current_position}'
+
+        if not current_position:  # Не смогли найти координаты
+            message = 'Мы не смогли определить Ваше местоположение. Попробуйте уточнить, пожалуйста!'
+            keyboard[0] = keyboard[0][1:]
+
+        update.message.delete()
+        update.message.reply_text(text=message, reply_markup=reply_markup)
+
+    else:
+        message = 'Пожалуйста, пришлите ваш адрес или геолокацию.'
+        query = update.callback_query
+
+        # if '/create_customer' in query.data:
+        #     username = query.message.from_user['username']
+        #     email = str(query.data).split('>')[1]
+        #     customer = create_a_customer(
+        #         context.bot_data['api_base_url'],
+        #         context.bot_data['client_id'],
+        #         context.bot_data['client_secret'],
+        #         username,
+        #         email
+        #     )['data']
+        #     message = f'''\
+        #     Покупатель: {customer['name']}
+        #     E-mail: {customer['email']}
+        #     ID: {customer['id']}
+        #     '''
+        #     query.message.delete()
+        #
+        # elif '/wrong_email' in query.data:
+        #     query.message.delete()
+
+        query.message.reply_text(text=dedent(message))
+        query.answer()
+
+    return 'HANDLE_WAITING'
+
+
+
 def handle_users_reply(
         update,
         context,
@@ -290,7 +382,7 @@ def handle_users_reply(
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_CART': handle_cart,
-        # 'WAITING_EMAIL': handle_email,
+        'HANDLE_WAITING': handle_waiting,
     }
     state_handler = states_functions[user_state]
 
@@ -303,12 +395,17 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     api_base_url, client_id, client_secret = load_environment()
 
-    updater = Updater(os.environ["TELEGRAM-TOKEN"])
+    updater = Updater(os.environ['TELEGRAM-TOKEN'])
 
     dispatcher = updater.dispatcher
     dispatcher.bot_data['api_base_url'] = api_base_url
     dispatcher.bot_data['client_id'] = client_id
     dispatcher.bot_data['client_secret'] = client_secret
+    dispatcher.bot_data['yandex_key'] = os.environ['YANDEX_KEY']
+
+    dispatcher.add_handler(
+        MessageHandler(Filters.location, handle_waiting)
+    )
 
     dispatcher.add_handler(
         CallbackQueryHandler(handle_users_reply)
