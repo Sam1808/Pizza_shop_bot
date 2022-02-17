@@ -15,12 +15,13 @@ from moltin_api import load_environment
 from moltin_api import remove_item_from_cart
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
+from telegram import LabeledPrice, Update
+
+from telegram.ext import CallbackContext, CallbackQueryHandler
+from telegram.ext import CommandHandler, MessageHandler
 from telegram.ext import Filters, PreCheckoutQueryHandler, Updater
 
 from textwrap import dedent
-
-import telegram
 
 
 def _error(_, context):
@@ -56,8 +57,9 @@ def start(update, context):
     if not context.user_data.get('menu_from'):
         context.user_data['menu_from'] = 0
         context.user_data['menu_to'] = 8
+        # Количество отображаемых товаров: 8 шт.
 
-    menu_from = context.user_data['menu_from']  #TODO:Optimaze it!
+    menu_from = context.user_data['menu_from']
     if menu_from < 0:
         context.user_data['menu_from'] = 0
         menu_from = 0
@@ -73,7 +75,10 @@ def start(update, context):
     keyboard = keyboard[menu_from:menu_to]
 
     menu_footer = [
-        [InlineKeyboardButton('<', callback_data='<'), InlineKeyboardButton('>', callback_data='>')],
+        [
+            InlineKeyboardButton('<', callback_data='<'),
+            InlineKeyboardButton('>', callback_data='>')
+        ],
         [InlineKeyboardButton('Корзина', callback_data='/cart')]
     ]
 
@@ -81,14 +86,18 @@ def start(update, context):
     if update.message:
         update.message.delete()
         keyboard += menu_footer
-        update.message.reply_text(text=message, reply_markup=InlineKeyboardMarkup(keyboard))
+        update.message.reply_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
     else:
+        update.callback_query.message.delete()
         keyboard += menu_footer
         update.callback_query.message.reply_text(
             text=message,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
-        update.callback_query.message.delete()
+
     return "HANDLE_MENU"
 
 
@@ -109,7 +118,7 @@ def handle_menu(update, context):
     if query.data == '/cart':
         return handle_cart(update, context)
 
-    product_description = get_products(
+    product_details = get_products(
         context.bot_data['api_base_url'],
         context.bot_data['client_id'],
         context.bot_data['client_secret'],
@@ -117,13 +126,13 @@ def handle_menu(update, context):
     )['data']
 
     unit_price = \
-        product_description['meta']['display_price']['with_tax']['formatted'][1:]
+        product_details['meta']['display_price']['with_tax']['formatted'][1:]
     message = f'''\
-    {product_description['name']}
-    Описание: {product_description['description']}
+    {product_details['name']}
+    Описание: {product_details['description']}
     Цена: {unit_price} рублей за штуку'''
 
-    file_id = product_description['relationships']['main_image']['data']['id']
+    file_id = product_details['relationships']['main_image']['data']['id']
     file_description = get_files(
         context.bot_data['api_base_url'],
         context.bot_data['client_id'],
@@ -139,14 +148,14 @@ def handle_menu(update, context):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
+    query.message.delete()
     query.message.reply_photo(
         photo=file_url,
         caption=dedent(message),
         reply_markup=reply_markup
     )
-    query.message.delete()
-
     query.answer()
+
     return "HANDLE_DESCRIPTION"
 
 
@@ -188,9 +197,8 @@ def handle_description(update, context):
     {product_description['name']}.
     Количество: {purchase_quantity} штука'''
 
-    query.message.reply_text(text=dedent(message), reply_markup=reply_markup)
     query.message.delete()
-
+    query.message.reply_text(text=dedent(message), reply_markup=reply_markup)
     query.answer()
     return "HANDLE_DESCRIPTION"
 
@@ -236,14 +244,15 @@ def handle_cart(update, context):
     keyboard = list()
 
     for product in cart_status_items['data']:
-        unit_price = \
-            product['meta']['display_price']['with_tax']['unit']['formatted'][1:]
-        total_price = \
-            product['meta']['display_price']['with_tax']['value']['formatted'][1:]
+        price = product['meta']['display_price']['with_tax']
+
+        unit_price = price['unit']['formatted'][1:]
+        total_price = price['value']['formatted'][1:]
+
         product_message += dedent(f'''
         {product['name']}
         {product['description']}
-        Цена за штуку(шт): {unit_price} рублей
+        Цена за штуку: {unit_price} рублей
         Количество: {product['quantity']} шт.
         Всего цена: {total_price} рублей
         ''')
@@ -259,8 +268,9 @@ def handle_cart(update, context):
 
         order_description[product['name']] = product['quantity']
 
-    total_cost = \
-        cart_status['data']['meta']['display_price']['with_tax']['formatted'][1:]
+    cart_cost = cart_status['data']['meta']['display_price']['with_tax']
+    total_cost = cart_cost['formatted'][1:]
+
     product_message += f'\nИтого цена: {total_cost} рублей'
 
     context.user_data['total_cost'] = total_cost
@@ -282,7 +292,10 @@ def handle_cart(update, context):
 
 
 def handle_waiting(update, context):
-    """Здесь описание"""
+    """Функция ожидает/определяет локацию клиента.
+    Считает расстояние до пиццерии, запускает доставку (handle_delivery),
+    если необходимо.
+    """
 
     if update.message:
         current_position = None
@@ -301,10 +314,11 @@ def handle_waiting(update, context):
                 address=update.message.text
             )
 
-        if not current_position:  # Не смогли найти координаты
+        if not current_position:  # Яндекс (fetch_coordinates) вернул None
             update.message.delete()
-            message = 'Мы не смогли определить Ваше местоположение. Попробуйте уточнить, пожалуйста!'
-            update.message.reply_text(text=message)
+            message = '''Мы не смогли определить Ваше местоположение.
+            Попробуйте уточнить, пожалуйста!'''
+            update.message.reply_text(text=dedent(message))
             return 'HANDLE_WAITING'
 
         context.user_data['current_position'] = current_position
@@ -315,7 +329,10 @@ def handle_waiting(update, context):
             context.bot_data['client_secret'],
             flow_slug='pizza-shop'
         )
-        nearest_org = get_min_distance(current_position, all_organization['data'])
+        nearest_org = get_min_distance(
+            current_position,
+            all_organization['data']
+        )
         context.user_data['nearest_pizzeria'] = nearest_org
         distance_to_org = float(nearest_org['distance'])
 
@@ -330,24 +347,24 @@ def handle_waiting(update, context):
 
         if distance_to_org <= 0.5:
             message = dedent(f'''
-                Может, заберете заказ из нашей пиццерии неподалеку? 
-                Она всего в {distance_to_org} км от Вас.
-                А можем и бесплатно доставить, Вы только скажите!
+            Может, заберете заказ из нашей пиццерии неподалеку?
+            Она всего в {distance_to_org} км от Вас.
+            А можем и бесплатно доставить, Вы только скажите!
             ''')
         elif distance_to_org <= 5:
             message = dedent(f'''
-                Заберете сами? Мы в {distance_to_org}км от Вас.  
-                Можем и доставить за дополнительные 100 рублей к стоимости заказа.
+            Заберете сами? Мы в {distance_to_org}км от Вас.
+            Можем и доставить за дополнительные 100 рублей к стоимости заказа.
             ''')
         elif distance_to_org <= 20:
             message = dedent(f'''
-                Заберете сами? Мы в {distance_to_org}км от Вас.  
-                Можем и доставить за дополнительные 300 рублей к стоимости заказа.
+            Заберете сами? Мы в {distance_to_org}км от Вас.
+            Можем и доставить за дополнительные 300 рублей к стоимости заказа.
             ''')
         elif distance_to_org > 20:
             message = dedent(f'''
-                Так далеко мы не сможем доставить, уж лучше Вы к нам!
-                Мы в {distance_to_org}км от Вас.  
+            Так далеко мы не сможем доставить, уж лучше Вы к нам!
+            Мы в {distance_to_org}км от Вас.
             ''')
             keyboard = [
                 [
@@ -398,7 +415,9 @@ def handle_waiting(update, context):
 
 
 def handle_delivery(update, context):
-    """Здесь описание"""
+    """Функция запускает доставку для конкретного заказа
+    Шлет сообщение курьеру
+    Формирует счет и проверяет оплату"""
 
     nearest_org_courier = context.user_data['nearest_pizzeria']['courier_id']
     order_entry_id = context.user_data['order_entry_id']
@@ -445,7 +464,7 @@ def pay_invoice(update, context):
     currency = "RUB"
     total_cost = str(context.user_data['total_cost']).replace(',', '')
     price = int(total_cost)
-    prices = [telegram.LabeledPrice("Pizza", price * 100)]
+    prices = [LabeledPrice("Pizza", price * 100)]
     update.callback_query.message.bot.sendInvoice(
         chat_id,
         title,
@@ -457,7 +476,7 @@ def pay_invoice(update, context):
     )
 
 
-def precheckout_callback(update: telegram.Update, context: telegram.ext.CallbackContext):
+def precheckout_callback(update: Update, context: CallbackContext):
     query = update.pre_checkout_query
     if query.invoice_payload != 'Custom-Payload':
         context.bot.answer_pre_checkout_query(
@@ -473,13 +492,14 @@ def precheckout_callback(update: telegram.Update, context: telegram.ext.Callback
 
 
 def successful_payment_callback(update, _):
-    update.message.reply_text("Thank you for your payment!")
+    update.message.reply_text(
+        "Успешная оплата. Спасибо за то, что выбрали нас"
+    )
 
 
-def send_bon_appetit(context: telegram.ext.CallbackContext):
+def send_bon_appetit(context: CallbackContext):
     text = f'''
     Приятного аппетита! *место для рекламы*
-
     *сообщение что делать если пицца не пришла*
     '''
     context.bot.send_message(
@@ -488,8 +508,8 @@ def send_bon_appetit(context: telegram.ext.CallbackContext):
     )
 
 
-def run_timer(update: telegram.Update, context: telegram.ext.CallbackContext):
-    timeout = 30
+def run_timer(update: Update, context: CallbackContext):
+    timeout = 30  # Таймаут для сообщение "Приятного аппетита" в секундах
     context.job_queue.run_once(
         send_bon_appetit,
         timeout,
@@ -497,11 +517,7 @@ def run_timer(update: telegram.Update, context: telegram.ext.CallbackContext):
     )
 
 
-def handle_users_reply(
-        update,
-        context,
-):
-
+def handle_users_reply(update, context):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -550,13 +566,17 @@ if __name__ == '__main__':
         CallbackQueryHandler(handle_users_reply)
     )
     dispatcher.add_handler(
-        MessageHandler(Filters.text, handle_users_reply, pass_job_queue=True)
+        MessageHandler(Filters.text, handle_users_reply)
     )
     dispatcher.add_handler(
         CommandHandler('start', handle_users_reply)
     )
-    dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
-    dispatcher.add_handler(MessageHandler(Filters.successful_payment, successful_payment_callback))
+    dispatcher.add_handler(
+        PreCheckoutQueryHandler(precheckout_callback)
+    )
+    dispatcher.add_handler(
+        MessageHandler(Filters.successful_payment, successful_payment_callback)
+    )
     dispatcher.add_error_handler(_error)
     updater.start_polling()
     updater.idle()
