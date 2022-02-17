@@ -427,6 +427,7 @@ def remove_item_from_cart(
 
     return response.json()
 
+
 @retry(tries=3, timeout=1)
 def create_a_flow(
         api_base_url,
@@ -438,7 +439,7 @@ def create_a_flow(
         is_enabled=True
 ):
     """
-    Создает новый на основании Flow
+    Создает новую Flow-модель
     """
     token = get_token(
         api_base_url,
@@ -466,6 +467,37 @@ def create_a_flow(
         url,
         headers=headers,
         data=json.dumps(data)
+    )
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_flow(
+        api_base_url,
+        client_id,
+        client_secret,
+        flow_id=None
+):
+    """
+    Возвращает список Flow моделей или конкретной модели по ее ID
+    """
+    token = get_token(
+        api_base_url,
+        client_id,
+        client_secret
+    )
+    headers = {
+        'Authorization': f'Bearer {token}',
+    }
+
+    url = f'{api_base_url}/v2/flows/'
+    if flow_id:
+        url += flow_id
+
+    response = requests.get(
+        url,
+        headers=headers,
     )
     response.raise_for_status()
 
@@ -554,6 +586,96 @@ def create_an_entry(
     response.raise_for_status()
 
     return response.json()
+
+
+@retry(tries=3, timeout=1)
+def update_an_entry(
+        api_base_url,
+        client_id,
+        client_secret,
+        flow_slug,
+        entry_id,
+        **kwargs
+):
+    """
+    Обновляет запись в модели Flow
+    """
+    token = get_token(
+        api_base_url,
+        client_id,
+        client_secret
+    )
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json',
+    }
+    url = f'{api_base_url}/v2/flows/{flow_slug}/entries/{entry_id}'
+    entry_description = {
+        "id": entry_id,
+        "type": "entry",
+        **kwargs
+    }
+    data = dict()
+    data["data"] = entry_description
+    response = requests.put(
+        url,
+        headers=headers,
+        data=json.dumps(data)
+    )
+    response.raise_for_status()
+
+    return response.json()
+
+
+
+@retry(tries=3, timeout=1)
+def get_all_entries(
+        api_base_url,
+        client_id,
+        client_secret,
+        flow_slug,
+        per_page=75
+):
+    token = get_token(
+        api_base_url,
+        client_id,
+        client_secret
+    )
+    headers = {
+        'Authorization': f'Bearer {token}',
+    }
+    url = f'{api_base_url}/v2/flows/{flow_slug}/entries'
+    payload = {'page': per_page}
+
+    response = requests.get(url, headers=headers, params=payload)
+    response.raise_for_status()
+
+    return response.json()
+
+
+@retry(tries=3, timeout=1)
+def get_an_entry(
+        api_base_url,
+        client_id,
+        client_secret,
+        flow_slug,
+        entry_id
+):
+    token = get_token(
+        api_base_url,
+        client_id,
+        client_secret
+    )
+    headers = {
+        'Authorization': f'Bearer {token}',
+    }
+    url = f'{api_base_url}/v2/flows/{flow_slug}/entries/{entry_id}'
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
 
 
 def load_environment():
