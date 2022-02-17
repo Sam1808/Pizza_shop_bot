@@ -473,6 +473,7 @@ def create_a_flow(
     return response.json()
 
 
+@retry(tries=3, timeout=1)
 def get_flow(
         api_base_url,
         client_id,
@@ -627,7 +628,6 @@ def update_an_entry(
     return response.json()
 
 
-
 @retry(tries=3, timeout=1)
 def get_all_entries(
         api_base_url,
@@ -636,6 +636,10 @@ def get_all_entries(
         flow_slug,
         per_page=75
 ):
+    """
+    Отдает список всех Entries в соответствии с Flow slug.
+    Количество записей регулируется переменной per_page (default 75)
+    """
     token = get_token(
         api_base_url,
         client_id,
@@ -661,6 +665,9 @@ def get_an_entry(
         flow_slug,
         entry_id
 ):
+    """
+    Отдает Entry по ее ID.
+    """
     token = get_token(
         api_base_url,
         client_id,
@@ -675,7 +682,6 @@ def get_an_entry(
     response.raise_for_status()
 
     return response.json()
-
 
 
 def load_environment():
