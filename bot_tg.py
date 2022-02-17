@@ -405,10 +405,10 @@ def handle_waiting(update, context):
                 {nearest_org_address}
                 Уже ждём Вас!
             '''
+
         elif '/back' == query.data:
             return start(update, context)
 
-        query.message.delete()
         query.message.reply_text(text=dedent(message))
         query.answer()
     return 'HANDLE_WAITING'
@@ -509,7 +509,7 @@ def send_bon_appetit(context: CallbackContext):
 
 
 def run_timer(update: Update, context: CallbackContext):
-    timeout = 30  # Таймаут для сообщение "Приятного аппетита" в секундах
+    timeout = 30  # Таймаут для сообщения "Приятного аппетита" в секундах
     context.job_queue.run_once(
         send_bon_appetit,
         timeout,

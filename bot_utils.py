@@ -1,8 +1,10 @@
 import requests
 
 from geopy import distance
+from funcy import retry
 
 
+@retry(tries=3, timeout=1)
 def fetch_coordinates(apikey, address):
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
@@ -11,7 +13,8 @@ def fetch_coordinates(apikey, address):
         "format": "json",
     })
     response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+    answer = response.json()
+    found_places = answer['response']['GeoObjectCollection']['featureMember']
 
     if not found_places:
         return None
@@ -21,10 +24,7 @@ def fetch_coordinates(apikey, address):
     return lat, lon
 
 
-def return_distance_key(org):
-    return org['distance']
-
-
+@retry(tries=3, timeout=1)
 def get_min_distance(client_position, org_catalog: list):
     for organization in org_catalog:
         org_position = (
@@ -39,3 +39,7 @@ def get_min_distance(client_position, org_catalog: list):
         org_catalog,
         key=return_distance_key
     )
+
+
+def return_distance_key(org):
+    return org['distance']
