@@ -100,6 +100,26 @@ add_product_to_cart(
 - `get_all_entries(flow_slug, per_page=75)`  
 
 Получаем все записи Flow модели по ее Slug, с указанием максимального количества записей  ответе (по умолчанию 75)
+
+- `get_an_entry(flow_slug, entry_id)`  
+
+Получаем конкретную запись Flow модели(aka Entry) по ее ID.
+
+- `update_an_entry(flow_slug, entry_id, **kwargs)`  
+
+Обновляем конкретную запись Flow модели(aka Entry) по ее ID. Опции обновления указываются `**kwags`.
+Пример:  
+```python
+        update_an_entry(
+            api_base_url,
+            client_id,
+            client_secret,
+            flow_slug='your_model_slug',
+            entry_id=12345679,  #  ID записи данной модели
+            exist_field=new_value
+        )
+```
+
 <hr>
 
 Все методы возвращают JSON данные, если явно не указано другое.  
