@@ -395,7 +395,6 @@ def handle_waiting(update, context):
             )
             context.user_data['order_entry_id'] = order_entry['data']['id']
             return handle_delivery(update, context)
-
         elif '/self' in query.data:
             query.message.delete()
             nearest_org = context.user_data['nearest_pizzeria']
@@ -405,7 +404,6 @@ def handle_waiting(update, context):
                 {nearest_org_address}
                 Уже ждём Вас!
             '''
-
         elif '/back' == query.data:
             return start(update, context)
 
@@ -497,6 +495,15 @@ def successful_payment_callback(update, _):
     )
 
 
+def run_timer(update: Update, context: CallbackContext):
+    timeout = 30  # Таймаут для сообщения "Приятного аппетита" в секундах
+    context.job_queue.run_once(
+        send_bon_appetit,
+        timeout,
+        context=update.effective_message.chat_id
+    )
+
+
 def send_bon_appetit(context: CallbackContext):
     text = f'''
     Приятного аппетита! *место для рекламы*
@@ -505,15 +512,6 @@ def send_bon_appetit(context: CallbackContext):
     context.bot.send_message(
         chat_id=context.job.context,
         text=dedent(text)
-    )
-
-
-def run_timer(update: Update, context: CallbackContext):
-    timeout = 30  # Таймаут для сообщения "Приятного аппетита" в секундах
-    context.job_queue.run_once(
-        send_bon_appetit,
-        timeout,
-        context=update.effective_message.chat_id
     )
 
 
