@@ -72,7 +72,7 @@ python3 bot_tg.py
 ![fish_shop.gif](pizza-shop.gif)  
 
 И ещё один пример:  
-**Временно** прототип бота развернут на [HEROKU](https://dashboard.heroku.com), можете попробовать его в действии [@My_DVMN_lessons_bot](https://t.me/My_DVMN_lessons_bot)
+**Временно** прототип бота развернут на [HEROKU](https://dashboard.heroku.com), можете попробовать его в действии [@DialogFlow_helper_bot](https://t.me/DialogFlow_helper_bot)
 
 ### 5. Известные проблемы
 *Рекомендация:* Будьте внимательны с уровнем прав доступа в [Elastic Path](https://www.elasticpath.com), изучите 
