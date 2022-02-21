@@ -4,6 +4,10 @@ import redis
 
 from bot_utils import fetch_coordinates
 from bot_utils import get_min_distance
+from bot_utils import pay_invoice
+from bot_utils import precheckout_callback
+from bot_utils import run_timer
+from bot_utils import successful_payment_callback
 
 from dotenv import load_dotenv
 from functools import partial
@@ -19,7 +23,7 @@ from moltin_api import get_products
 from moltin_api import remove_item_from_cart
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import LabeledPrice, Update
+# from telegram import LabeledPrice, Update
 
 from telegram.ext import CallbackContext, CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler
@@ -452,70 +456,50 @@ def handle_delivery(update, context):
     run_timer(update, context)
 
 
-def pay_invoice(update, context):
-    chat_id = update.effective_message.chat_id
-    title = "Счет"
-    description = "Детали заказа: "
-    order_description = context.user_data['order_description']
-    for key in order_description.keys():
-        description += f'{key}({order_description[key]} шт.);'
-
-    payload = "Custom-Payload"
-    provider_token = context.bot_data['payment_token']
-    currency = "RUB"
-    total_cost = str(context.user_data['total_cost']).replace(',', '')
-    price = int(total_cost)
-    prices = [LabeledPrice("Pizza", price * 100)]
-    update.callback_query.message.bot.sendInvoice(
-        chat_id,
-        title,
-        description,
-        payload,
-        provider_token,
-        currency,
-        prices
-    )
-
-
-def precheckout_callback(update: Update, context: CallbackContext):
-    query = update.pre_checkout_query
-    if query.invoice_payload != 'Custom-Payload':
-        context.bot.answer_pre_checkout_query(
-            pre_checkout_query_id=query.id,
-            ok=False,
-            error_message="Something went wrong..."
-        )
-    else:
-        context.bot.answer_pre_checkout_query(
-            pre_checkout_query_id=query.id,
-            ok=True
-        )
-
-
-def successful_payment_callback(update, _):
-    update.message.reply_text(
-        "Успешная оплата. Спасибо за то, что выбрали нас"
-    )
+# def pay_invoice(update, context):
+#     chat_id = update.effective_message.chat_id
+#     title = "Счет"
+#     description = "Детали заказа: "
+#     order_description = context.user_data['order_description']
+#     for key in order_description.keys():
+#         description += f'{key}({order_description[key]} шт.);'
+#
+#     payload = "Custom-Payload"
+#     provider_token = context.bot_data['payment_token']
+#     currency = "RUB"
+#     total_cost = str(context.user_data['total_cost']).replace(',', '')
+#     price = int(total_cost)
+#     prices = [LabeledPrice("Pizza", price * 100)]
+#     update.callback_query.message.bot.sendInvoice(
+#         chat_id,
+#         title,
+#         description,
+#         payload,
+#         provider_token,
+#         currency,
+#         prices
+#     )
+#
+#
+# def precheckout_callback(update: Update, context: CallbackContext):
+#     query = update.pre_checkout_query
+#     if query.invoice_payload != 'Custom-Payload':
+#         context.bot.answer_pre_checkout_query(
+#             pre_checkout_query_id=query.id,
+#             ok=False,
+#             error_message="Something went wrong..."
+#         )
+#     else:
+#         context.bot.answer_pre_checkout_query(
+#             pre_checkout_query_id=query.id,
+#             ok=True
+#         )
 
 
-def run_timer(update: Update, context: CallbackContext):
-    timeout = 30  # Таймаут для сообщения "Приятного аппетита" в секундах
-    context.job_queue.run_once(
-        send_bon_appetit,
-        timeout,
-        context=update.effective_message.chat_id
-    )
-
-
-def send_bon_appetit(context: CallbackContext):
-    text = f'''
-    Приятного аппетита! *место для рекламы*
-    *сообщение что делать если пицца не пришла*
-    '''
-    context.bot.send_message(
-        chat_id=context.job.context,
-        text=dedent(text)
-    )
+# def successful_payment_callback(update, _):
+#     update.message.reply_text(
+#         "Успешная оплата. Спасибо за то, что выбрали нас"
+#     )
 
 
 def handle_users_reply(
@@ -546,8 +530,8 @@ def handle_users_reply(
     state_handler = states_functions[user_state]
 
     next_state = state_handler(update, context)
-
-    db_connection.set(chat_id, next_state)
+    if next_state:
+        db_connection.set(chat_id, next_state)
 
 
 if __name__ == '__main__':
