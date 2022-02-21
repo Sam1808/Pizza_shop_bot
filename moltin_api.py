@@ -297,10 +297,9 @@ def get_cart_status(
         client_id,
         client_secret,
         card_id,
-        items=False
 ):
     """
-    Возвращает статус корзины или ее список товаров в ней
+    Возвращает статус корзины
     """
     token = get_token(
         api_base_url,
@@ -308,10 +307,31 @@ def get_cart_status(
         client_secret,
     )
     headers = {'Authorization': f'Bearer {token}'}
-
     url = f'{api_base_url}/v2/carts/{card_id}'
-    if items:
-        url += '/items'
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+@retry(tries=3, timeout=1)
+def get_items_in_cart(
+        api_base_url,
+        client_id,
+        client_secret,
+        card_id,
+):
+    """
+    Возвращает список товаров в корзине
+    """
+    token = get_token(
+        api_base_url,
+        client_id,
+        client_secret,
+    )
+    headers = {'Authorization': f'Bearer {token}'}
+    url = f'{api_base_url}/v2/carts/{card_id}/items'
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()

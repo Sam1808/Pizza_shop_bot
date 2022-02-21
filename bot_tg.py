@@ -14,6 +14,7 @@ from moltin_api import get_all_entries
 from moltin_api import get_entry
 from moltin_api import get_cart_status
 from moltin_api import get_files
+from moltin_api import get_items_in_cart
 from moltin_api import get_products
 from moltin_api import remove_item_from_cart
 
@@ -235,12 +236,11 @@ def handle_cart(update, context):
         context.bot_data['client_secret'],
         chat_id
     )
-    cart_status_items = get_cart_status(
+    cart_status_items = get_items_in_cart(
         context.bot_data['api_base_url'],
         context.bot_data['client_id'],
         context.bot_data['client_secret'],
         chat_id,
-        items=True
     )
 
     product_message = ''
