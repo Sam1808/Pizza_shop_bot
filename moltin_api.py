@@ -3,7 +3,6 @@ import os
 import requests
 import time
 
-from dotenv import load_dotenv
 from funcy import retry
 
 MOLTIN_TOKEN = None
@@ -682,12 +681,3 @@ def get_an_entry(
     response.raise_for_status()
 
     return response.json()
-
-
-def load_environment():
-    load_dotenv()
-    api_base_url = os.environ.get('API_BASE_URL', 'https://api.moltin.com')
-    client_id = os.environ["CLIENT_ID"]
-    client_secret = os.environ["CLIENT_SECRET"]
-
-    return api_base_url, client_id, client_secret

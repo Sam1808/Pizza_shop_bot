@@ -2,10 +2,11 @@ import logging
 import os
 import redis
 
-from functools import partial
-
 from bot_utils import fetch_coordinates
 from bot_utils import get_min_distance
+
+from dotenv import load_dotenv
+from functools import partial
 
 from moltin_api import add_product_to_cart
 from moltin_api import create_an_entry
@@ -14,7 +15,6 @@ from moltin_api import get_an_entry
 from moltin_api import get_cart_status
 from moltin_api import get_files
 from moltin_api import get_products
-from moltin_api import load_environment
 from moltin_api import remove_item_from_cart
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -552,14 +552,15 @@ def handle_users_reply(
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    api_base_url, client_id, client_secret = load_environment()
+    load_dotenv()
+    api_base_url = os.environ.get('API_BASE_URL', 'https://api.moltin.com')
 
     updater = Updater(os.environ['TELEGRAM-TOKEN'])
 
     dispatcher = updater.dispatcher
     dispatcher.bot_data['api_base_url'] = api_base_url
-    dispatcher.bot_data['client_id'] = client_id
-    dispatcher.bot_data['client_secret'] = client_secret
+    dispatcher.bot_data['client_id'] = os.environ["CLIENT_ID"]
+    dispatcher.bot_data['client_secret'] = os.environ["CLIENT_SECRET"]
     dispatcher.bot_data['yandex_key'] = os.environ['YANDEX_KEY']
     dispatcher.bot_data['payment_token'] = os.environ['PAYMENT_TOKEN']
 
