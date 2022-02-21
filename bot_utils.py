@@ -37,9 +37,5 @@ def get_min_distance(client_position, org_catalog: list):
 
     return min(
         org_catalog,
-        key=return_distance_key
+        key=lambda org: org['distance']
     )
-
-
-def return_distance_key(org):
-    return org['distance']
