@@ -88,19 +88,19 @@ def start(update, context):
 
     message = 'Список предложений:'
     if update.message:
-        update.message.delete()
         keyboard += menu_footer
         update.message.reply_text(
             text=message,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
+        update.message.delete()
     else:
-        update.callback_query.message.delete()
         keyboard += menu_footer
         update.callback_query.message.reply_text(
             text=message,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
+        update.callback_query.message.delete()
 
     return "HANDLE_MENU"
 
@@ -152,12 +152,12 @@ def handle_menu(update, context):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    query.message.delete()
     query.message.reply_photo(
         photo=file_url,
         caption=dedent(message),
         reply_markup=reply_markup
     )
+    query.message.delete()
     query.answer()
 
     return "HANDLE_DESCRIPTION"
@@ -201,8 +201,8 @@ def handle_description(update, context):
     {product_description['name']}.
     Количество: {purchase_quantity} штука'''
 
-    query.message.delete()
     query.message.reply_text(text=dedent(message), reply_markup=reply_markup)
+    query.message.delete()
     query.answer()
     return "HANDLE_DESCRIPTION"
 
@@ -287,8 +287,8 @@ def handle_cart(update, context):
     )
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    query.message.delete()
     query.message.reply_text(text=product_message, reply_markup=reply_markup)
+    query.message.delete()
 
     query.answer()
     return 'HANDLE_CART'
@@ -318,10 +318,10 @@ def handle_waiting(update, context):
             )
 
         if not current_position:  # Яндекс (fetch_coordinates) вернул None
-            update.message.delete()
             message = '''Мы не смогли определить Ваше местоположение.
             Попробуйте уточнить, пожалуйста!'''
             update.message.reply_text(text=dedent(message))
+            update.message.delete()
             return 'HANDLE_WAITING'
 
         context.user_data['current_position'] = current_position
@@ -377,8 +377,8 @@ def handle_waiting(update, context):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        update.message.delete()
         update.message.reply_text(text=message, reply_markup=reply_markup)
+        update.message.delete()
 
     else:
         message = 'Пожалуйста, пришлите ваш адрес или геолокацию.'
@@ -399,7 +399,6 @@ def handle_waiting(update, context):
             context.user_data['order_entry_id'] = order_entry['data']['id']
             return handle_delivery(update, context)
         elif '/self' in query.data:
-            query.message.delete()
             nearest_org = context.user_data['nearest_pizzeria']
             nearest_org_address = nearest_org['pizza_Address']
             message = f'''
@@ -407,6 +406,7 @@ def handle_waiting(update, context):
                 {nearest_org_address}
                 Уже ждём Вас!
             '''
+            query.message.delete()
         elif '/back' == query.data:
             return start(update, context)
 
