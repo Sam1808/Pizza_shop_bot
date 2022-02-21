@@ -33,6 +33,11 @@ TELEGRAM-TOKEN=ваш токен
 YANDEX_KEY=ваш токен
 # Токен системы платежей
 PAYMENT_TOKEN=ваш токен
+
+# Доступ к базе данных Redis
+REDIS-BASE=полное имя базы данных
+REDIS-PORT=порт базы данных
+REDIS-PASSWORD=пароль к базе данных
 ```
 
 ### 3. Подготавливаем данные в [Elastic Path](https://www.elasticpath.com) для работы магазина

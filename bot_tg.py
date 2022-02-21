@@ -1,5 +1,8 @@
 import logging
 import os
+import redis
+
+from functools import partial
 
 from bot_utils import fetch_coordinates
 from bot_utils import get_min_distance
@@ -515,7 +518,11 @@ def send_bon_appetit(context: CallbackContext):
     )
 
 
-def handle_users_reply(update, context):
+def handle_users_reply(
+        update,
+        context,
+        db_connection,
+):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -527,7 +534,7 @@ def handle_users_reply(update, context):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = context.user_data[chat_id]
+        user_state = db_connection.get(chat_id).decode("utf-8")
 
     states_functions = {
         'START': start,
@@ -540,7 +547,7 @@ def handle_users_reply(update, context):
 
     next_state = state_handler(update, context)
 
-    context.user_data[chat_id] = next_state
+    db_connection.set(chat_id, next_state)
 
 
 if __name__ == '__main__':
@@ -556,18 +563,29 @@ if __name__ == '__main__':
     dispatcher.bot_data['yandex_key'] = os.environ['YANDEX_KEY']
     dispatcher.bot_data['payment_token'] = os.environ['PAYMENT_TOKEN']
 
+    db_connection = redis.Redis(
+        host=os.environ["REDIS-BASE"],
+        port=int(os.environ["REDIS-PORT"]),
+        password=os.environ["REDIS-PASSWORD"]
+    )
+
+    partial_handle_users_reply = partial(
+        handle_users_reply,
+        db_connection=db_connection,
+    )
+
     dispatcher.add_handler(
         MessageHandler(Filters.location, handle_waiting)
     )
 
     dispatcher.add_handler(
-        CallbackQueryHandler(handle_users_reply)
+        CallbackQueryHandler(partial_handle_users_reply)
     )
     dispatcher.add_handler(
-        MessageHandler(Filters.text, handle_users_reply)
+        MessageHandler(Filters.text, partial_handle_users_reply)
     )
     dispatcher.add_handler(
-        CommandHandler('start', handle_users_reply)
+        CommandHandler('start', partial_handle_users_reply)
     )
     dispatcher.add_handler(
         PreCheckoutQueryHandler(precheckout_callback)
