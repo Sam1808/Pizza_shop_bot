@@ -38,11 +38,11 @@ add_product_to_cart(
 
 Добавляет *существующий* товар в корзину с определенным id, на основании id товара и необходимого количества.
 
-- `create_a_file(folder_name='images')`
+- `create_file(folder_name='images')`
 
 Загружает файлы из папки `images` в систему Elastic Path, загруженные файлы помечает как `.uploaded`. Вы можете указать другую папку с файлами.
 Возвращает строку с указанием количества загруженных файлов и их списком.
-- `create_a_customer(name=Jimm Smith, email=js@hismail.com)`.
+- `create_customer(name=Jimm Smith, email=js@hismail.com)`.
  
 Создает покупателя в базе данных Elastic Path, присваевает ему id. 
 Поля для пароля не предусмотрено, но его можно легко дописать согласно [документации](https://documentation.elasticpath.com/commerce-cloud/docs/api/customers-and-accounts/customers/create-a-customer.html).
@@ -52,7 +52,7 @@ add_product_to_cart(
 - `get_actual_token()`.
 
 Функция получения актуального токена для работы с методами, основывается на `CLIENT_ID` и `CLIENT_SECRET`.
-- `get_a_customers(customer_id=None)`
+- `get_customers(customer_id=None)`
 
 Функция для получения списка всех существующих покупателей, или описания конкретного покупателя согласно его id, т.об. `get_a_customers(customer_id=025245-4156456-454)`
 - `get_files(file_id=None)`
@@ -68,7 +68,7 @@ add_product_to_cart(
 
 Удаление из конкретной корзины (на основе ее id), конкретного товара.
 
-- `create_a_flow(flow_name, flow_slug, flow_description, is_enabled=True)`
+- `create_flow(flow_name, flow_slug, flow_description, is_enabled=True)`
 
 Создаем новую **Flow** модель .Обязательные поля `flow_name`, `flow_slug`, `flow_description`.
 
@@ -87,7 +87,7 @@ add_product_to_cart(
 ```
 
 
-- `create_an_entry(flow_slug, **kwargs)`  
+- `create_entry(flow_slug, **kwargs)`  
 
 Создаем запись в выбранной Flow-модели. [Документация](https://documentation.elasticpath.com/commerce-cloud/docs/api/advanced/custom-data/entries/create-an-entry.html).
 Обязательные элементы: 
@@ -101,11 +101,11 @@ add_product_to_cart(
 
 Получаем все записи Flow модели по ее Slug, с указанием максимального количества записей  ответе (по умолчанию 75)
 
-- `get_an_entry(flow_slug, entry_id)`  
+- `get_entry(flow_slug, entry_id)`  
 
 Получаем конкретную запись Flow модели(aka Entry) по ее ID.
 
-- `update_an_entry(flow_slug, entry_id, **kwargs)`  
+- `update_entry(flow_slug, entry_id, **kwargs)`  
 
 Обновляем конкретную запись Flow модели(aka Entry) по ее ID. Опции обновления указываются `**kwags`.
 Пример:  

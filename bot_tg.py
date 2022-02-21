@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 from functools import partial
 
 from moltin_api import add_product_to_cart
-from moltin_api import create_an_entry
+from moltin_api import create_entry
 from moltin_api import get_all_entries
-from moltin_api import get_an_entry
+from moltin_api import get_entry
 from moltin_api import get_cart_status
 from moltin_api import get_files
 from moltin_api import get_products
@@ -387,7 +387,7 @@ def handle_waiting(update, context):
         if '/delivery' in query.data:
             username = query.message.from_user['username']
             user_lat, user_lon = context.user_data['current_position']
-            order_entry = create_an_entry(
+            order_entry = create_entry(
                 context.bot_data['api_base_url'],
                 context.bot_data['client_id'],
                 context.bot_data['client_secret'],
@@ -423,7 +423,7 @@ def handle_delivery(update, context):
     nearest_org_courier = context.user_data['nearest_pizzeria']['courier_id']
     order_entry_id = context.user_data['order_entry_id']
 
-    address_entry = get_an_entry(
+    address_entry = get_entry(
         context.bot_data['api_base_url'],
         context.bot_data['client_id'],
         context.bot_data['client_secret'],

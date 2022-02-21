@@ -52,7 +52,7 @@ def add_product_to_cart(
 
 
 @retry(tries=3, timeout=1)
-def create_a_file(
+def create_file(
         api_base_url,
         client_id,
         client_secret,
@@ -100,7 +100,7 @@ def create_a_file(
 
 
 @retry(tries=3, timeout=1)
-def create_a_file_from_url(
+def create_file_from_url(
         api_base_url,
         client_id,
         client_secret,
@@ -128,7 +128,7 @@ def create_a_file_from_url(
 
 
 @retry(tries=3, timeout=1)
-def create_a_customer(
+def create_customer(
         api_base_url,
         client_id,
         client_secret,
@@ -237,7 +237,7 @@ def get_token(
 
 
 @retry(tries=3, timeout=1)
-def get_a_customers(
+def get_customers(
         api_base_url,
         client_id,
         client_secret,
@@ -348,7 +348,7 @@ def get_products(
 
 
 @retry(tries=3, timeout=1)
-def create_a_product(
+def create_product(
         api_base_url,
         client_id,
         client_secret,
@@ -428,7 +428,7 @@ def remove_item_from_cart(
 
 
 @retry(tries=3, timeout=1)
-def create_a_flow(
+def create_flow(
         api_base_url,
         client_id,
         client_secret,
@@ -555,7 +555,7 @@ def create_field_for_flow(
 
 
 @retry(tries=3, timeout=1)
-def create_an_entry(
+def create_entry(
         api_base_url,
         client_id,
         client_secret,
@@ -589,7 +589,7 @@ def create_an_entry(
 
 
 @retry(tries=3, timeout=1)
-def update_an_entry(
+def update_entry(
         api_base_url,
         client_id,
         client_secret,
@@ -657,7 +657,7 @@ def get_all_entries(
 
 
 @retry(tries=3, timeout=1)
-def get_an_entry(
+def get_entry(
         api_base_url,
         client_id,
         client_secret,
