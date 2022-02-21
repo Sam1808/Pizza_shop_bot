@@ -23,10 +23,8 @@ from moltin_api import get_products
 from moltin_api import remove_item_from_cart
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-# from telegram import LabeledPrice, Update
 
-from telegram.ext import CallbackContext, CallbackQueryHandler
-from telegram.ext import CommandHandler, MessageHandler
+from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler
 from telegram.ext import Filters, PreCheckoutQueryHandler, Updater
 
 from textwrap import dedent
@@ -454,52 +452,6 @@ def handle_delivery(update, context):
     )
     pay_invoice(update, context)
     run_timer(update, context)
-
-
-# def pay_invoice(update, context):
-#     chat_id = update.effective_message.chat_id
-#     title = "Счет"
-#     description = "Детали заказа: "
-#     order_description = context.user_data['order_description']
-#     for key in order_description.keys():
-#         description += f'{key}({order_description[key]} шт.);'
-#
-#     payload = "Custom-Payload"
-#     provider_token = context.bot_data['payment_token']
-#     currency = "RUB"
-#     total_cost = str(context.user_data['total_cost']).replace(',', '')
-#     price = int(total_cost)
-#     prices = [LabeledPrice("Pizza", price * 100)]
-#     update.callback_query.message.bot.sendInvoice(
-#         chat_id,
-#         title,
-#         description,
-#         payload,
-#         provider_token,
-#         currency,
-#         prices
-#     )
-#
-#
-# def precheckout_callback(update: Update, context: CallbackContext):
-#     query = update.pre_checkout_query
-#     if query.invoice_payload != 'Custom-Payload':
-#         context.bot.answer_pre_checkout_query(
-#             pre_checkout_query_id=query.id,
-#             ok=False,
-#             error_message="Something went wrong..."
-#         )
-#     else:
-#         context.bot.answer_pre_checkout_query(
-#             pre_checkout_query_id=query.id,
-#             ok=True
-#         )
-
-
-# def successful_payment_callback(update, _):
-#     update.message.reply_text(
-#         "Успешная оплата. Спасибо за то, что выбрали нас"
-#     )
 
 
 def handle_users_reply(
